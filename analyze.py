@@ -37,8 +37,8 @@ def main():
             file_names += file_name + " "
 
     total_command = "{} -p {} {}".format(args.exe, build_path, file_names)
-    if args.extra != "":
-        total_command += " --extra-arg={}".format(args.extra)
+    if args.extra_arg != "":
+        total_command += " --extra-arg={}".format(args.extra_arg)
     # 执行命令
     try:
         result = subprocess.run(total_command, shell=True, check=True, capture_output=True, text=True)
