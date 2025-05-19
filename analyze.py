@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import json
 import os
@@ -28,8 +30,6 @@ def main():
     file_names = ""
     for entry in data:
         file_name = entry.get("file")
-        if "directory" in entry.keys():
-            file_name = os.path.join(entry.get("directory"), file_name)
         if file_name:
             file_names += file_name + " "
 
