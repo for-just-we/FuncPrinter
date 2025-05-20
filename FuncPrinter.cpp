@@ -12,7 +12,6 @@
 #include "clang/Lex/PPCallbacks.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/JSON.h"
-#include "llvm/Support/FormatVariadic.h"
 
 #include <unordered_set>
 #include <mutex>
@@ -25,13 +24,6 @@ using namespace std;
 
 // 定义命令行选项分类
 cl::OptionCategory FunctionInfoPrinterCategory("Function Info Printer");
-
-cl::opt<string> OutputPath(
-        "output",
-        cl::desc("Specify output JSON file path"),
-        cl::value_desc("filename"),
-        cl::init("functions.json"), // 默认值
-        cl::cat(FunctionInfoPrinterCategory));
 
 static unordered_set<std::string> GlobalPrintedFunctions;
 static mutex GlobalMutex;

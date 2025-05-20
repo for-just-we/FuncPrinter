@@ -16,6 +16,8 @@ def get_parser():
 def main():
     parser = get_parser()
     args = parser.parse_args()
+    analyzed_files = set()
+    analyzed_funcs = set()
 
     build_path = args.path
     compile_commands_path = os.path.join(build_path, "compile_commands.json")
@@ -28,25 +30,42 @@ def main():
         data: List[Dict[str, str]] = json.load(f)
 
     # data 应该是 List[Dict]
-    file_names = ""
     for entry in data:
+        # 设置当前工作目录
+        work_dir = entry.get("directory", build_path)
         file_name = entry.get("file")
-        if "directory" in entry.keys():
-            file_name = os.path.join(entry.get("directory"), file_name)
-        if file_name:
-            file_names += file_name + " "
+        cur_file = os.path.join(entry.get("directory"), file_name)
+        if cur_file in analyzed_files:
+            continue
+        analyzed_files.add(cur_file)
+        total_command = "{} -p {} {}".format(args.exe, build_path, cur_file)
+        if args.extra_arg != "":
+            total_command += " --extra-arg={}".format(args.extra_arg)
+        # 执行命令
+        try:
+            result = subprocess.run(total_command, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+            lines = result.stdout.split('\n')
+            for line in lines:
+                if len(line) == 0:
+                    continue
+                if line == "\n":
+                    continue
+                json_data = json.loads(line)
+                file_name = json_data["file"]
+                if not os.path.isabs(file_name):
+                    json_data["file"] = os.path.normpath(os.path.join(work_dir, file_name))
+                # 不重复输出
+                func_key = (json_data["file"], json_data["line"], json_data["name"])
+                if func_key in analyzed_funcs:
+                    continue
+                analyzed_funcs.add(func_key)
+                str_content = json.dumps(json_data)
+                print(str_content)
 
-    total_command = "{} -p {} {}".format(args.exe, build_path, file_names)
-    if args.extra_arg != "":
-        total_command += " --extra-arg={}".format(args.extra_arg)
-    # 执行命令
-    try:
-        result = subprocess.run(total_command, shell=True, check=True, capture_output=True, text=True)
-        print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed with return code {e.returncode}")
-        print("Error output:")
-        print(e.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print("Error output:")
+            print(e.stderr)
 
 
 if __name__ == '__main__':

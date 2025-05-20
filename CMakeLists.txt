@@ -55,29 +55,32 @@ message(STATUS "find zstd include: ${ZSTD_INCLUDE_DIRS}")
 
 add_executable(FuncPrinter FuncPrinter.cpp)
 
+set(CLANG_LIBS
+        ${llvm_libs}
+        clangAST
+        clangBasic
+        clangDriver
+        clangFrontend
+        clangIndex
+        clangLex
+        clangSema
+        clangSerialization
+        clangTooling
+        clangFormat
+        clangToolingInclusions
+        clangToolingCore
+        clangRewriteFrontend
+        clangStaticAnalyzerFrontend
+        clangCrossTU
+        clangStaticAnalyzerCheckers
+        clangStaticAnalyzerCore
+        clangParse
+        clangEdit
+        clangRewrite
+        clangAnalysis
+        clangASTMatchers
+        clangTransformer
+        ${ZSTD_LIBRARIES})
+
 target_link_libraries(FuncPrinter
-     ${llvm_libs}
-     clangAST
-     clangBasic
-     clangDriver
-     clangFrontend
-     clangIndex
-     clangLex
-     clangSema
-     clangSerialization
-     clangTooling
-     clangFormat
-     clangToolingInclusions
-     clangToolingCore
-     clangRewriteFrontend
-     clangStaticAnalyzerFrontend
-     clangCrossTU
-     clangStaticAnalyzerCheckers
-     clangStaticAnalyzerCore
-     clangParse
-     clangEdit
-     clangRewrite
-     clangAnalysis
-     clangASTMatchers
-     clangTransformer
-     ${ZSTD_LIBRARIES})
+     ${CLANG_LIBS})
