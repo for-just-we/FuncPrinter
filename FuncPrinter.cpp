@@ -39,7 +39,7 @@ public:
               PrintedFunctions(PrintedFunctions), Mutex(Mutex) {}
 
     bool VisitFunctionDecl(FunctionDecl* FD) {
-        if (!FD->isThisDeclarationADefinition() || Context.getSourceManager().isInSystemHeader(FD->getLocation()))
+        if (!FD->hasBody() || Context.getSourceManager().isInSystemHeader(FD->getLocation()))
             return true;
 
         const SourceManager &SM = Context.getSourceManager();
