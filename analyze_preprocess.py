@@ -49,6 +49,7 @@ def generate_preprocess_cmd_for_cmake(cmd, file_name):
         else:
             new_argument.append(arg)
     new_argument.extend(['-o', file_name + ".tmp.c"])
+    return new_argument
 
 
 
