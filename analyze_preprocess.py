@@ -13,6 +13,28 @@ def get_parser():
     parser.add_argument("-extra", "--extra_arg", default="")
     return parser
 
+
+def generate_preprocess_cmd(arguments: List[str], file_name):
+    new_argument: List[str] = list()
+    output_file = ""
+    for i in range(len(arguments)):
+        arg = arguments[i]
+        if arg == "-emit-llvm":
+            continue
+        elif arg == "-c":
+            new_argument.append("-E")
+        elif arg == "-o":
+            output_file = arguments[i + 1]
+            continue
+        elif arg == output_file:
+            continue
+        else:
+            new_argument.append(arg)
+    new_argument.extend([">", file_name + ".tmp.c"])
+    return new_argument
+
+
+
 # bear生成的compile_commands.json包括file和directory、cmake生成的只有file
 def main():
     parser = get_parser()
@@ -48,6 +70,17 @@ def main():
         try:
             result = subprocess.run(total_command, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
             lines = result.stdout.split('\n')
+            preprocess_args = generate_preprocess_cmd(entry.get("arguments"), file_name)
+            # generate preprocessed file
+            subprocess.run(preprocess_args, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+            # generate command for analyzing preprocessed file
+            analyze_preprocess_file_cmd = "{} {} --".format(args.exe, file_name + ".tmp.c")
+            result_preprocessed = subprocess.run(analyze_preprocess_file_cmd, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+            lines_preprocessed = result_preprocessed.stdout.split('\n')
+            subprocess.run("rm -f {}".format(file_name + ".tmp.c"), shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+
+            cur_analyzed_datas = {}
+
             for line in lines:
                 if len(line) == 0:
                     continue
@@ -62,8 +95,25 @@ def main():
                 if func_key in analyzed_funcs:
                     continue
                 analyzed_funcs.add(func_key)
-                str_content = json.dumps(json_data)
-                print(str_content)
+                cur_analyzed_datas[func_key] = json_data
+
+            # traverse preprocessed results
+            for line in lines_preprocessed:
+                if len(line) == 0:
+                    continue
+                if line == "\n":
+                    continue
+                json_data = json.loads(line)
+                file_name = json_data["file"]
+                if not os.path.isabs(file_name):
+                    json_data["file"] = os.path.normpath(os.path.join(work_dir, file_name))
+                # 不重复输出
+                func_key = (json_data["file"], json_data["line"], json_data["name"])
+                if func_key in cur_analyzed_datas.keys():
+                    cur_analyzed_datas[func_key]["preprocessed_code"] = json_data["code"]
+                    str_content = json.dumps(cur_analyzed_datas)
+                    print(str_content)
+
 
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
