@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -30,7 +30,7 @@ def generate_preprocess_cmd(arguments: List[str], file_name):
             continue
         else:
             new_argument.append(arg)
-    new_argument.extend([">", file_name + ".tmp.c"])
+    new_argument.extend(["-o", file_name + ".tmp.c"])
     return new_argument
 
 
@@ -95,7 +95,8 @@ def main():
                 if func_key in analyzed_funcs:
                     continue
                 analyzed_funcs.add(func_key)
-                cur_analyzed_datas[func_key] = json_data
+                func_dict_key = json_data["file"] + ":" + str(json_data["line"]) +":" + json_data["name"]
+                cur_analyzed_datas[func_dict_key] = json_data
 
             # traverse preprocessed results
             for line in lines_preprocessed:
@@ -108,10 +109,10 @@ def main():
                 if not os.path.isabs(file_name):
                     json_data["file"] = os.path.normpath(os.path.join(work_dir, file_name))
                 # 不重复输出
-                func_key = (json_data["file"], json_data["line"], json_data["name"])
+                func_key = json_data["file"] + ":" + str(json_data["line"]) +":" + json_data["name"]
                 if func_key in cur_analyzed_datas.keys():
                     cur_analyzed_datas[func_key]["preprocessed_code"] = json_data["code"]
-                    str_content = json.dumps(cur_analyzed_datas)
+                    str_content = json.dumps(cur_analyzed_datas[func_key])
                     print(str_content)
 
 
