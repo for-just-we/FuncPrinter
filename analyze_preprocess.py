@@ -90,37 +90,32 @@ def main():
                 func_dict_key = json_data["file"] + ":" + str(json_data["line"]) +":" + json_data["name"]
                 cur_analyzed_datas[func_dict_key] = json_data
 
-            try:
-                preprocess_args = generate_preprocess_cmd(entry.get("arguments"), file_name)
-                # generate preprocessed file
-                subprocess.run(preprocess_args, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
-                # generate command for analyzing preprocessed file
-                analyze_preprocess_file_cmd = "{} {} --".format(args.exe, file_name + ".tmp.c")
-                result_preprocessed = subprocess.run(analyze_preprocess_file_cmd, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
-                lines_preprocessed = result_preprocessed.stdout.split('\n')
-                # traverse preprocessed results
-                for line in lines_preprocessed:
-                    if len(line) == 0:
-                        continue
-                    if line == "\n":
-                        continue
-                    json_data = json.loads(line)
-                    file_name = json_data["file"]
-                    if not os.path.isabs(file_name):
-                        json_data["file"] = os.path.normpath(os.path.join(work_dir, file_name))
-                    # 不重复输出
-                    func_key = json_data["file"] + ":" + str(json_data["line"]) +":" + json_data["name"]
-                    if func_key in cur_analyzed_datas.keys():
-                        cur_analyzed_datas[func_key]["preprocessed_code"] = json_data["code"]
-                        str_content = json.dumps(cur_analyzed_datas[func_key])
-                        print(str_content)
+            preprocess_args = generate_preprocess_cmd(entry.get("arguments"), file_name)
+            # generate preprocessed file
+            subprocess.run(preprocess_args, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+            # generate command for analyzing preprocessed file
+            analyze_preprocess_file_cmd = "{} {} --".format(args.exe, file_name + ".tmp.c")
+            result_preprocessed = subprocess.run(analyze_preprocess_file_cmd, shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+            subprocess.run("rm -f {}".format(file_name + ".tmp.c"), shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
+            lines_preprocessed = result_preprocessed.stdout.split('\n')
+            # traverse preprocessed results
+            for line in lines_preprocessed:
+                if len(line) == 0:
+                    continue
+                if line == "\n":
+                    continue
+                json_data = json.loads(line)
+                file_name = json_data["file"]
+                if not os.path.isabs(file_name):
+                    json_data["file"] = os.path.normpath(os.path.join(work_dir, file_name))
+                # 不重复输出
+                func_key = json_data["file"] + ":" + str(json_data["line"]) +":" + json_data["name"]
+                if func_key in cur_analyzed_datas.keys():
+                    cur_analyzed_datas[func_key]["preprocessed_code"] = json_data["code"]
+                    str_content = json.dumps(cur_analyzed_datas[func_key])
+                    print(str_content)
 
-            except subprocess.CalledProcessError as e1:
-                for func_key, item in cur_analyzed_datas.items():
-                    print(json.dumps(item))
 
-            finally:
-                subprocess.run("rm -f {}".format(file_name + ".tmp.c"), shell=True, check=True, capture_output=True, text=True, cwd=work_dir)
 
 
         except subprocess.CalledProcessError as e:
